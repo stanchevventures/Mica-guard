@@ -1,6 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+// Страници, до които има достъп само влязъл потребител
+const PROTECTED_PATHS = ["/dashboard", "/onboarding"];
+
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -30,9 +33,10 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
+  const isProtected = PROTECTED_PATHS.some((p) => path.startsWith(p));
 
-  // Невлязъл потребител опитва /dashboard -> към /login
-  if (!user && path.startsWith("/dashboard")) {
+  // Невлязъл потребител опитва защитена страница -> към /login
+  if (!user && isProtected) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
