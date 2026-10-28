@@ -121,12 +121,18 @@ async function DashboardContent() {
                   {ROLE_LABELS[role]}
                 </span>
               </div>
-              <div className="mt-4 flex gap-3">
+              <div className="mt-4 flex flex-wrap gap-3">
                 <Link
                   href={`/dashboard/${org.slug}/checks`}
                   className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm hover:bg-slate-800"
                 >
                   Проверки →
+                </Link>
+                <Link
+                  href={`/dashboard/${org.slug}/portfolio`}
+                  className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm hover:bg-slate-800"
+                >
+                  Портфейл
                 </Link>
                 {role !== "viewer" && (
                   <Link

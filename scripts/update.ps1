@@ -36,7 +36,7 @@ $ts = Get-Content "$root\tsconfig.json" -Raw
 if ($ts -notmatch '"scripts"' -or $ts -notmatch '"tests"') {
   Fail 'В tsconfig.json добави "scripts" и "tests" в "exclude": ["node_modules", "scripts", "tests"]'
 }
-npm pkg set "scripts.test=node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/mica-engine.test.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/esma-register.test.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/auth-redirect.test.mts" | Out-Null
+npm pkg set "scripts.test=node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/mica-engine.test.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/esma-register.test.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/auth-redirect.test.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/stablecoins.test.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/portfolio.test.mts" | Out-Null
 npm pkg set "scripts.esma-sync=node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --env-file=.env.local scripts/esma-sync.mts" | Out-Null
 if ((Test-Path "$root\src\app\favicon.ico") -and (Test-Path "$root\src\app\icon.svg")) {
   Remove-Item "$root\src\app\favicon.ico"

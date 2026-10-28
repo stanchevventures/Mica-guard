@@ -41,14 +41,16 @@ export function CheckForm({
   assets,
   classificationLabels,
   activityLabels,
+  initialAssetId = "",
 }: {
   action: (prev: CheckState, formData: FormData) => Promise<CheckState>;
   assets: FormAsset[];
+  initialAssetId?: string;
   classificationLabels: Record<string, string>;
   activityLabels: Record<string, string>;
 }) {
   const [state, formAction, pending] = useActionState<CheckState, FormData>(action, {});
-  const [assetId, setAssetId] = useState("");
+  const [assetId, setAssetId] = useState(initialAssetId);
   const [services, setServices] = useState<string[]>([]);
   const [issuer, setIssuer] = useState<Tri | "">("");
   const [whitepaper, setWhitepaper] = useState<Tri | "">("");

@@ -53,7 +53,7 @@ export async function signup(_prev: AuthState, formData: FormData): Promise<Auth
   const origin = await siteOrigin();
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     ...parsed.data,
     options: {
       emailRedirectTo: `${origin}/auth/callback?next=/dashboard`,
@@ -62,6 +62,9 @@ export async function signup(_prev: AuthState, formData: FormData): Promise<Auth
   });
 
   if (error) return { error: authErrorMessage(error.code, "Регистрацията не успя. Опитай отново.") };
+
+  // Когато потвърждението по имейл е изключено в Supabase, профилът влиза веднага
+  if (data.session) redirect("/dashboard");
 
   return { message: "Готово! Провери имейла си и натисни линка за потвърждение." };
 }

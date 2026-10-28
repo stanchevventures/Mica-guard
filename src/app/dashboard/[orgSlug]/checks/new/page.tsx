@@ -9,20 +9,22 @@ import { createCheck } from "../actions";
 import { CheckForm, type FormAsset } from "../check-form";
 
 type Params = Promise<{ orgSlug: string }>;
+type Search = Promise<{ asset?: string | string[] }>;
 
-export default function NewCheckPage({ params }: { params: Params }) {
+export default function NewCheckPage({ params, searchParams }: { params: Params; searchParams: Search }) {
   return (
     <main className="min-h-screen bg-slate-950 px-6 py-10 text-white">
       <Suspense fallback={<p className="text-slate-400">Зареждане…</p>}>
-        <NewCheck params={params} />
+        <NewCheck params={params} searchParams={searchParams} />
       </Suspense>
     </main>
   );
 }
 
-async function NewCheck({ params }: { params: Params }) {
+async function NewCheck({ params, searchParams }: { params: Params; searchParams: Search }) {
   await connection();
   const { orgSlug } = await params;
+  const { asset: assetParam } = await searchParams;
   const supabase = await createClient();
 
   const {
@@ -116,6 +118,11 @@ async function NewCheck({ params }: { params: Params }) {
           <CheckForm
             action={createCheck.bind(null, orgSlug)}
             assets={assets as FormAsset[]}
+            initialAssetId={
+              typeof assetParam === "string" && (assets as FormAsset[]).some((a) => a.id === assetParam)
+                ? assetParam
+                : ""
+            }
             classificationLabels={CLASSIFICATION_LABEL}
             activityLabels={ACTIVITY_LABEL}
           />

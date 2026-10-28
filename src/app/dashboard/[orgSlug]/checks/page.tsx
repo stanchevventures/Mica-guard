@@ -70,17 +70,25 @@ async function ChecksList({ params }: { params: Params }) {
         ← Табло
       </Link>
 
-      <div className="mt-3 flex items-center justify-between">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Проверки</h1>
           <p className="mt-1 text-sm text-slate-400">{org.name}</p>
         </div>
-        <Link
-          href={`/dashboard/${orgSlug}/checks/new`}
-          className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium hover:bg-emerald-500"
-        >
-          + Нова проверка
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href={`/dashboard/${orgSlug}/portfolio`}
+            className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium hover:border-slate-500"
+          >
+            Проверка на портфейл
+          </Link>
+          <Link
+            href={`/dashboard/${orgSlug}/checks/new`}
+            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium hover:bg-emerald-500"
+          >
+            + Нова проверка
+          </Link>
+        </div>
       </div>
 
       {checks.length === 0 ? (
