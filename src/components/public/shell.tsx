@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { Logo } from "@/components/brand";
 import { PUBLIC_CSS } from "./styles";
 
 export type Lang = "bg" | "en";
@@ -41,28 +42,28 @@ export function PublicShell({ lang, page, children }: { lang: Lang; page: Public
     <div className="lp" lang={lang}>
       <style>{PUBLIC_CSS}</style>
 
-      <header className="lp-wrap lp-nav">
-        <Link href={PUBLIC_PAGES.home[lang]} className="lp-logo">
-          MiCA-Guard
-        </Link>
-        <nav className="lp-nav-links" aria-label={t.nav}>
-          <Link
-            href={PUBLIC_PAGES.stablecoins[lang]}
-            className="lp-navlink"
-            aria-current={page === "stablecoins" ? "page" : undefined}
-          >
-            {t.stablecoins}
-          </Link>
-          <Link href="/login" className="lp-navlink lp-navlink-wide">
-            {t.login}
-          </Link>
-          <Link href="/login?mode=signup" className="lp-btn lp-btn-small">
-            {t.signup}
-          </Link>
-          <Link href={PUBLIC_PAGES[page][other]} className="lp-lang" hrefLang={other} aria-label={t.switchLabel}>
-            {t.switchTo}
-          </Link>
-        </nav>
+      <header className="lp-header">
+        <div className="lp-wrap lp-nav">
+          <Logo href={PUBLIC_PAGES.home[lang]} size={38} />
+          <nav className="lp-nav-links" aria-label={t.nav}>
+            <Link
+              href={PUBLIC_PAGES.stablecoins[lang]}
+              className="lp-navlink lp-hide-sm"
+              aria-current={page === "stablecoins" ? "page" : undefined}
+            >
+              {t.stablecoins}
+            </Link>
+            <Link href="/login" className="lp-navlink lp-hide-sm">
+              {t.login}
+            </Link>
+            <Link href="/login?mode=signup" className="lp-btn lp-btn-small">
+              {t.signup}
+            </Link>
+            <Link href={PUBLIC_PAGES[page][other]} className="lp-lang" hrefLang={other} aria-label={t.switchLabel}>
+              {t.switchTo}
+            </Link>
+          </nav>
+        </div>
       </header>
 
       <main>{children}</main>
@@ -70,7 +71,7 @@ export function PublicShell({ lang, page, children }: { lang: Lang; page: Public
       <footer className="lp-wrap lp-footer">
         <p>{t.disclaimer}</p>
         <p>
-          © 2026 MiCA-Guard. <a href="mailto:team@micaguard.eu">team@micaguard.eu</a>
+          © 2026 MiCA Guard · <a href="https://micaguard.eu">micaguard.eu</a> · <a href="mailto:team@micaguard.eu">team@micaguard.eu</a>
         </p>
       </footer>
     </div>

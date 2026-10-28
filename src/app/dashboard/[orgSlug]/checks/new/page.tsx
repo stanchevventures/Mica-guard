@@ -13,7 +13,7 @@ type Search = Promise<{ asset?: string | string[] }>;
 
 export default function NewCheckPage({ params, searchParams }: { params: Params; searchParams: Search }) {
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-10 text-white">
+    <main className="min-h-screen px-6 py-10 text-white">
       <Suspense fallback={<p className="text-slate-400">Зареждане…</p>}>
         <NewCheck params={params} searchParams={searchParams} />
       </Suspense>
@@ -75,7 +75,7 @@ async function NewCheck({ params, searchParams }: { params: Params; searchParams
       </Link>
       <div className="mt-3 flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-semibold">Нова проверка</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Нова проверка</h1>
           <p className="mt-1 text-sm text-slate-400">{org.name}</p>
         </div>
         <div className="text-right text-xs text-slate-400">
@@ -107,7 +107,7 @@ async function NewCheck({ params, searchParams }: { params: Params; searchParams
         </div>
       )}
 
-      <div className="mt-6 rounded-xl border border-slate-800 bg-slate-900 p-6">
+      <div className="mt-6 rounded-2xl border border-slate-800 bg-slate-900 p-6">
         {!canRun ? (
           <p className="text-slate-300">Ролята ти (Наблюдател) позволява само преглед на проверките.</p>
         ) : remaining === 0 ? (

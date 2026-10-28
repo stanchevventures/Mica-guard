@@ -4,7 +4,7 @@ import { useActionState } from "react";
 import type { SettingsState } from "./actions";
 
 const fieldClass =
-  "w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none disabled:opacity-60";
+  "w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none disabled:opacity-60";
 
 export function SettingsForm({
   action,
@@ -64,7 +64,7 @@ export function SettingsForm({
         <button
           type="submit"
           disabled={pending}
-          className="w-full rounded-lg bg-emerald-600 py-2 font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+          className="w-full rounded-lg btn-grad py-2 font-medium text-white disabled:opacity-50"
         >
           {pending ? "Записване…" : "Запази"}
         </button>

@@ -10,7 +10,7 @@ type Params = Promise<{ orgSlug: string }>;
 
 export default function PortfolioPage({ params }: { params: Params }) {
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-10 text-white">
+    <main className="min-h-screen px-6 py-10 text-white">
       <Suspense fallback={<p className="text-slate-400">Зареждане…</p>}>
         <Portfolio params={params} />
       </Suspense>
@@ -37,7 +37,7 @@ async function Portfolio({ params }: { params: Params }) {
         ← Към проверките
       </Link>
       <div className="mt-3">
-        <h1 className="text-2xl font-semibold">Проверка на портфейл</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Проверка на портфейл</h1>
         <p className="mt-1 text-sm text-slate-400">
           {org.name} — всички токени наведнъж: лиценз на емитента, бяла книга и срокове по MiCA, сверени с регистъра на
           ESMA.

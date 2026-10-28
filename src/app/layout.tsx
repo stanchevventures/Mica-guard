@@ -1,20 +1,13 @@
 import type { ReactNode } from "react";
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Sans, IBM_Plex_Serif } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
-// IBM Plex — с кирилица; шрифтовете се вграждат при build (без заявки към Google от браузъра)
-const sans = IBM_Plex_Sans({
+// Inter — същият шрифт като на micaguard.eu, с кирилица; вгражда се при build (без заявки към Google от браузъра)
+const inter = Inter({
   subsets: ["latin", "cyrillic"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-plex-sans",
-  display: "swap",
-});
-
-const serif = IBM_Plex_Serif({
-  subsets: ["latin", "cyrillic"],
-  weight: ["400", "500", "600"],
-  variable: "--font-plex-serif",
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-inter",
   display: "swap",
 });
 
@@ -40,12 +33,12 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#020617",
+  themeColor: "#0A0D14",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="bg" className={`${sans.variable} ${serif.variable}`}>
+    <html lang="bg" className={inter.variable}>
       <body className="antialiased">{children}</body>
     </html>
   );

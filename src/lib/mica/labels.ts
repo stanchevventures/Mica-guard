@@ -15,10 +15,10 @@ export const RESULT_HINT: Record<string, string> = {
 };
 
 export const RESULT_STYLE: Record<string, string> = {
-  compliant: "bg-emerald-950 text-emerald-300",
-  partially_compliant: "bg-amber-950 text-amber-300",
-  non_compliant: "bg-red-950 text-red-300",
-  inconclusive: "bg-slate-800 text-slate-200",
+  compliant: "bg-emerald-500/10 text-emerald-300 ring-1 ring-inset ring-emerald-500/30",
+  partially_compliant: "bg-amber-500/10 text-amber-300 ring-1 ring-inset ring-amber-500/30",
+  non_compliant: "bg-red-500/10 text-red-300 ring-1 ring-inset ring-red-500/30",
+  inconclusive: "bg-white/5 text-slate-200 ring-1 ring-inset ring-white/15",
 };
 
 export const OUTCOME_LABEL: Record<string, string> = {
@@ -38,11 +38,11 @@ export const OUTCOME_ICON: Record<string, string> = {
 };
 
 export const OUTCOME_STYLE: Record<string, string> = {
-  pass: "bg-emerald-950 text-emerald-300",
-  fail: "bg-red-950 text-red-300",
-  evidence_required: "bg-amber-950 text-amber-300",
-  upcoming: "bg-sky-950 text-sky-300",
-  not_applicable: "bg-slate-800 text-slate-300",
+  pass: "bg-emerald-500/10 text-emerald-300 ring-1 ring-inset ring-emerald-500/30",
+  fail: "bg-red-500/10 text-red-300 ring-1 ring-inset ring-red-500/30",
+  evidence_required: "bg-amber-500/10 text-amber-300 ring-1 ring-inset ring-amber-500/30",
+  upcoming: "bg-sky-500/10 text-sky-300 ring-1 ring-inset ring-sky-500/30",
+  not_applicable: "bg-white/5 text-slate-200 ring-1 ring-inset ring-white/15",
 };
 
 /** Подредба на констатациите: първо нарушенията, после липсващите данни и т.н. */

@@ -48,7 +48,7 @@ type Snapshot = {
 
 export default function CheckDetailPage({ params }: { params: Params }) {
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-10 text-white">
+    <main className="min-h-screen px-6 py-10 text-white">
       <Suspense fallback={<p className="text-slate-400">Зареждане…</p>}>
         <CheckDetail params={params} />
       </Suspense>
@@ -114,10 +114,10 @@ async function CheckDetail({ params }: { params: Params }) {
       </div>
 
       {/* ---------------- Обобщение ---------------- */}
-      <div className="mt-3 rounded-xl border border-slate-800 bg-slate-900 p-6">
+      <div className="mt-3 rounded-2xl border border-slate-800 bg-slate-900 p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold">
+            <h1 className="text-2xl font-bold tracking-tight">
               {check.symbol} <span className="text-slate-400">— {check.asset_name}</span>
             </h1>
             <p className="mt-1 text-sm text-slate-400">
@@ -191,7 +191,7 @@ async function CheckDetail({ params }: { params: Params }) {
         {findings.map((f) => {
           const issue = f.outcome === "fail" || f.outcome === "evidence_required" || f.outcome === "upcoming";
           return (
-            <li key={f.id} className="rounded-xl border border-slate-800 bg-slate-900 p-5">
+            <li key={f.id} className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="font-medium">{f.title}</p>
@@ -220,7 +220,7 @@ async function CheckDetail({ params }: { params: Params }) {
 
       {/* ---------------- Входни данни ---------------- */}
       {snap.answers && (
-        <section className="mt-8 rounded-xl border border-slate-800 bg-slate-900 p-6">
+        <section className="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-6">
           <h2 className="text-lg font-medium">Входни данни</h2>
           <p className="mt-1 text-xs text-slate-500">
             Данните, на които се основава оценката, към {formatDate(snap.evaluated_at ?? check.created_at)}.
@@ -236,7 +236,7 @@ async function CheckDetail({ params }: { params: Params }) {
               <div className="sm:col-span-2">
                 <dt className="text-slate-400">Линк към бялата книга</dt>
                 <dd className="mt-0.5 break-all">
-                  <a href={answers.whitepaper_url} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">
+                  <a href={answers.whitepaper_url} target="_blank" rel="noopener noreferrer" className="text-cyan-300 hover:underline">
                     {answers.whitepaper_url}
                   </a>
                 </dd>
@@ -253,7 +253,7 @@ async function CheckDetail({ params }: { params: Params }) {
       )}
 
       {/* ---------------- Методология ---------------- */}
-      <details className="mt-6 rounded-xl border border-slate-800 bg-slate-900 p-5 text-sm text-slate-300">
+      <details className="mt-6 rounded-2xl border border-slate-800 bg-slate-900 p-5 text-sm text-slate-300">
         <summary className="cursor-pointer font-medium text-white">Как се определя резултатът</summary>
         <div className="mt-3 space-y-2">
           <p>

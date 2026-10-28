@@ -47,8 +47,8 @@ const ENTITY_LABELS: Record<string, string> = {
 
 export default function DashboardPage() {
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-10 text-white">
-      <h1 className="text-2xl font-semibold">Табло</h1>
+    <main className="min-h-screen px-6 py-10 text-white">
+      <h1 className="text-2xl font-bold tracking-tight">Табло</h1>
       <Suspense fallback={<p className="mt-4 text-slate-400">Зареждане…</p>}>
         <DashboardContent />
       </Suspense>
@@ -86,7 +86,7 @@ async function DashboardContent() {
 
   return (
     <div className="mt-6 max-w-2xl space-y-6">
-      <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900 p-6">
+      <div className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900 p-6">
         <div>
           <p className="text-slate-400">Влязъл си като:</p>
           <p className="mt-1 text-lg">{profile?.full_name || profile?.email || user.email}</p>
@@ -101,14 +101,14 @@ async function DashboardContent() {
       <div>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-medium">Твоите организации</h2>
-          <Link href="/onboarding" className="text-sm text-emerald-400 hover:text-emerald-300">
+          <Link href="/onboarding" className="text-sm text-cyan-300 hover:text-cyan-200">
             + Нова организация
           </Link>
         </div>
 
         <ul className="space-y-3">
           {orgs.map(({ role, org }) => (
-            <li key={org.id} className="rounded-xl border border-slate-800 bg-slate-900 p-5">
+            <li key={org.id} className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-lg font-medium">{org.name}</p>
@@ -117,7 +117,7 @@ async function DashboardContent() {
                     {org.country_code ? ` · ${org.country_code}` : ""} · план {PLAN_LABELS[org.plan] ?? org.plan}
                   </p>
                 </div>
-                <span className="rounded-full bg-emerald-950 px-3 py-1 text-xs text-emerald-300">
+                <span className="rounded-full bg-cyan-500/10 px-3 py-1 text-xs text-cyan-300 ring-1 ring-inset ring-cyan-500/30">
                   {ROLE_LABELS[role]}
                 </span>
               </div>
@@ -137,7 +137,7 @@ async function DashboardContent() {
                 {role !== "viewer" && (
                   <Link
                     href={`/dashboard/${org.slug}/checks/new`}
-                    className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium hover:bg-emerald-500"
+                    className="rounded-lg btn-grad px-3 py-1.5 text-sm font-medium"
                   >
                     + Нова проверка
                   </Link>

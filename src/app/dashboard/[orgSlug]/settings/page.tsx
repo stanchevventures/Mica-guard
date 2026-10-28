@@ -12,7 +12,7 @@ type Params = Promise<{ orgSlug: string }>;
 
 export default function SettingsPage({ params }: { params: Params }) {
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-10 text-white">
+    <main className="min-h-screen px-6 py-10 text-white">
       <Suspense fallback={<p className="text-slate-400">Зареждане…</p>}>
         <Settings params={params} />
       </Suspense>
@@ -65,10 +65,10 @@ async function Settings({ params }: { params: Params }) {
       <Link href="/dashboard" className="text-sm text-slate-400 hover:text-white">
         ← Табло
       </Link>
-      <h1 className="mt-3 text-2xl font-semibold">Настройки</h1>
+      <h1 className="mt-3 text-2xl font-bold tracking-tight">Настройки</h1>
       <p className="mt-1 text-sm text-slate-400">{org.name}</p>
 
-      <div className="mt-6 rounded-xl border border-slate-800 bg-slate-900 p-6">
+      <div className="mt-6 rounded-2xl border border-slate-800 bg-slate-900 p-6">
         <h2 className="mb-4 font-medium">Регулаторни данни</h2>
         <SettingsForm
           action={updateOrgSettings.bind(null, orgSlug)}
@@ -81,7 +81,7 @@ async function Settings({ params }: { params: Params }) {
         />
       </div>
 
-      <div className="mt-6 rounded-xl border border-slate-800 bg-slate-900 p-6">
+      <div className="mt-6 rounded-2xl border border-slate-800 bg-slate-900 p-6">
         <div className="flex items-baseline justify-between gap-3">
           <h2 className="font-medium">Регистър на ESMA</h2>
           {status.casp && (
@@ -113,7 +113,7 @@ async function Settings({ params }: { params: Params }) {
             <div className="flex flex-wrap items-center gap-2">
               <span
                 className={`rounded px-2 py-0.5 text-xs font-medium ${
-                  ended ? "bg-red-950 text-red-300" : "bg-emerald-950 text-emerald-300"
+                  ended ? "bg-red-500/10 text-red-300 ring-1 ring-inset ring-red-500/30" : "bg-emerald-500/10 text-emerald-300 ring-1 ring-inset ring-emerald-500/30"
                 }`}
               >
                 {ended ? "Прекратен" : e.legal_basis === "art60" ? "Нотификация (чл. 60)" : "Лиценз (чл. 63)"}

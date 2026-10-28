@@ -34,7 +34,7 @@ const CASP_SERVICES = [
 const LINK_SERVICES = ["trading_platform", "exchange_funds", "exchange_crypto", "advice", "portfolio"];
 
 const fieldClass =
-  "w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none";
+  "w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none";
 
 export function CheckForm({
   action,
@@ -273,7 +273,7 @@ export function CheckForm({
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-lg bg-emerald-600 py-2.5 font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+        className="w-full rounded-lg btn-grad py-2.5 font-medium text-white disabled:opacity-50"
       >
         {pending ? "Проверката се изпълнява…" : "Пусни проверка"}
       </button>
@@ -295,7 +295,7 @@ function Check({
   return (
     <label
       className={`flex cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 text-sm ${
-        checked ? "border-emerald-700 bg-emerald-950/40 text-white" : "border-slate-800 text-slate-300 hover:border-slate-700"
+        checked ? "border-cyan-500/50 bg-cyan-500/10 text-white" : "border-slate-800 text-slate-300 hover:border-slate-700"
       }`}
     >
       <input type="checkbox" name="services" value={value} checked={checked} onChange={onChange} className="mt-0.5" />
@@ -330,7 +330,7 @@ function TriQuestion({
         {options.map(([v, text]) => (
           <label
             key={v}
-            className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-800 px-3 py-1.5 text-sm text-slate-300 has-[:checked]:border-emerald-700 has-[:checked]:bg-emerald-950/40 has-[:checked]:text-white"
+            className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-800 px-3 py-1.5 text-sm text-slate-300 has-[:checked]:border-cyan-500/50 has-[:checked]:bg-cyan-500/10 has-[:checked]:text-white"
           >
             <input
               type="radio"

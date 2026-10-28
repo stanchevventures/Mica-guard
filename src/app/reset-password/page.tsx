@@ -2,18 +2,20 @@
 
 import { useActionState } from "react";
 import { updatePassword, type ResetState } from "./actions";
+import { Logo } from "@/components/brand";
 
 const fieldClass =
-  "w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none";
+  "w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none";
 
 // Достъпна само с валидна сесия от линка в имейла (proxy пренасочва останалите към /login)
 export default function ResetPasswordPage() {
   const [state, action, pending] = useActionState<ResetState, FormData>(updatePassword, {});
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
+    <main className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-xl">
-        <h1 className="text-2xl font-semibold text-white">Нова парола</h1>
+        <Logo size={36} className="mb-6" />
+        <h1 className="text-2xl font-bold tracking-tight text-white">Нова парола</h1>
         <p className="mt-1 text-sm text-slate-400">Въведи новата парола два пъти.</p>
 
         <form action={action} className="mt-6 space-y-4">
@@ -41,7 +43,7 @@ export default function ResetPasswordPage() {
           <button
             type="submit"
             disabled={pending}
-            className="w-full rounded-lg bg-emerald-600 py-2 font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+            className="w-full rounded-lg btn-grad py-2 font-medium text-white disabled:opacity-50"
           >
             {pending ? "Записване…" : "Запази новата парола"}
           </button>

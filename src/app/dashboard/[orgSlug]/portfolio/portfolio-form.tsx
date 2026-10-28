@@ -40,7 +40,7 @@ function countsText(c: { fail: number; evidence_required: number; upcoming: numb
 }
 
 const fieldClass =
-  "w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none";
+  "w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none";
 
 export function PortfolioForm({
   action,
@@ -73,7 +73,7 @@ export function PortfolioForm({
 
   return (
     <div className="space-y-8">
-      <form action={formAction} className="space-y-6 rounded-xl border border-slate-800 bg-slate-900 p-6">
+      <form action={formAction} className="space-y-6 rounded-2xl border border-slate-800 bg-slate-900 p-6">
         <section>
           <label htmlFor="symbols" className="mb-1 block text-sm font-semibold uppercase tracking-wide text-slate-400">
             1. Токените, които предлагате
@@ -101,7 +101,7 @@ export function PortfolioForm({
             {CASP_SERVICES.map((s) => (
               <label
                 key={s}
-                className="flex cursor-pointer items-start gap-2 rounded-lg border border-slate-800 px-3 py-2 text-sm text-slate-300 has-[:checked]:border-emerald-700 has-[:checked]:bg-emerald-950/40 has-[:checked]:text-white"
+                className="flex cursor-pointer items-start gap-2 rounded-lg border border-slate-800 px-3 py-2 text-sm text-slate-300 has-[:checked]:border-cyan-500/50 has-[:checked]:bg-cyan-500/10 has-[:checked]:text-white"
               >
                 <input
                   type="checkbox"
@@ -149,7 +149,7 @@ export function PortfolioForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-lg bg-emerald-600 px-5 py-2.5 font-medium hover:bg-emerald-500 disabled:opacity-60"
+          className="rounded-lg btn-grad px-5 py-2.5 font-medium disabled:opacity-60"
         >
           {pending ? "Проверявам…" : "Провери портфейла"}
         </button>
@@ -270,7 +270,7 @@ export function PortfolioForm({
                       <td className="px-4 py-3 text-right">
                         <Link
                           href={`/dashboard/${orgSlug}/checks/new?asset=${r.asset_id}`}
-                          className="whitespace-nowrap text-sm text-emerald-400 hover:text-emerald-300"
+                          className="whitespace-nowrap text-sm text-cyan-300 hover:text-cyan-200"
                         >
                           Пълна проверка →
                         </Link>

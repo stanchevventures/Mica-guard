@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/mica-engine.test.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/esma-register.test.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/auth-redirect.test.mts",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/mica-engine.test.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/esma-register.test.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/auth-redirect.test.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/stablecoins.test.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/portfolio.test.mts",
     "esma-sync": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --env-file=.env.local scripts/esma-sync.mts"
   },
   "dependencies": {

@@ -1,33 +1,117 @@
 @import "tailwindcss";
 
-/* Приложението е тъмно; началната страница и докладът задават собствен фон */
+/*
+ * Дизайнът на micaguard.eu: тъмносин фон с решетка, синьо-циан градиенти, „стъклени“ панели, Inter.
+ * Таблото ползва Tailwind класове с slate-*; тук сивата скала е пренастроена към палитрата на сайта,
+ * така че всички страници сменят вида си наведнъж. Докладът за печат има собствени стилове (светъл, A4).
+ */
 :root {
-  --background: #020617;
-  --foreground: #e2e8f0;
+  --background: #0a0d14;
+  --foreground: #f3f4f6;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-plex-serif), ui-serif, Georgia, serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+@theme {
+  /* фон и полета */
+  --color-slate-950: #0a0d14;
+  /* „стъклени“ панели */
+  --color-slate-900: rgb(17 24 39 / 0.72);
+  /* линии и леки фонове */
+  --color-slate-800: rgb(255 255 255 / 0.08);
+  --color-slate-700: rgb(255 255 255 / 0.14);
+  --color-slate-600: rgb(255 255 255 / 0.22);
+  /* текст */
+  --color-slate-500: #6b7280;
+  --color-slate-400: #9ca3af;
+  --color-slate-300: #d1d5db;
+  --color-slate-200: #e5e7eb;
+  --color-slate-100: #f3f4f6;
 }
 
 @layer base {
   html {
     color-scheme: dark;
+    overflow-x: clip;
   }
 
   body {
-    background: var(--background);
+    position: relative;
+    min-height: 100vh;
+    background-color: var(--background);
+    background-image:
+      linear-gradient(to right, rgb(255 255 255 / 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(255 255 255 / 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
     color: var(--foreground);
-    font-family: var(--font-plex-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-family: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Сини и циан отблясъци в горната част, както на сайта. Под съдържанието (z-index: -1). */
+  body::before,
+  body::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    pointer-events: none;
+    border-radius: 50%;
+  }
+  body::before {
+    top: -180px;
+    left: 12%;
+    width: min(520px, 70vw);
+    height: 520px;
+    background: rgb(37 99 235 / 0.22);
+    filter: blur(120px);
+  }
+  body::after {
+    top: 60px;
+    right: 10%;
+    width: min(420px, 60vw);
+    height: 420px;
+    background: rgb(6 182 212 / 0.14);
+    filter: blur(110px);
   }
 
   /* Видим фокус при работа с клавиатура */
   a:focus-visible,
   button:focus-visible {
-    outline: 2px solid #34d399;
-    outline-offset: 2px;
+    outline: 2px solid #06b6d4;
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+
+  @media print {
+    body {
+      background: #fff;
+    }
+    body::before,
+    body::after {
+      display: none;
+    }
+  }
+}
+
+@layer components {
+  /* Основният бутон: градиент синьо → циан със светлина, както на сайта */
+  .btn-grad {
+    background-image: linear-gradient(90deg, #2563eb, #06b6d4);
+    color: #fff;
+    box-shadow: 0 0 25px rgb(59 130 246 / 0.35);
+    transition: filter 150ms;
+  }
+  .btn-grad:hover:not(:disabled) {
+    filter: brightness(1.1);
+  }
+
+  /* Панелите (bg-slate-900) са полупрозрачни — размиваме фона зад тях */
+  .bg-slate-900 {
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
   }
 }

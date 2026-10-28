@@ -1,13 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState, useEffect, useState } from "react";
+import { Logo } from "@/components/brand";
 import { login, requestPasswordReset, signup, type AuthState } from "./actions";
 
 type Mode = "login" | "signup" | "reset";
 
 const fieldClass =
-  "w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none";
+  "w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none";
 
 const TITLES: Record<Mode, string> = {
   login: "Влез в профила си",
@@ -46,12 +46,10 @@ export default function LoginPage() {
   const action = mode === "login" ? loginAction : mode === "signup" ? signupAction : resetAction;
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
+    <main className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-xl">
-        <Link href="/" className="text-2xl font-semibold text-white">
-          MiCA-Guard
-        </Link>
-        <p className="mt-1 text-sm text-slate-400">{TITLES[mode]}</p>
+        <Logo size={36} />
+        <p className="mt-4 text-sm text-slate-400">{TITLES[mode]}</p>
 
         {notice && (
           <p className="mt-4 rounded-lg border border-slate-700 bg-slate-950 p-3 text-sm text-slate-300">{notice}</p>
@@ -87,7 +85,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={pending}
-            className="w-full rounded-lg bg-emerald-600 py-2 font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+            className="w-full rounded-lg btn-grad py-2 font-medium text-white disabled:opacity-50"
           >
             {pending ? "Моля, изчакай…" : SUBMIT[mode]}
           </button>

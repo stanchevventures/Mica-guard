@@ -23,7 +23,7 @@ type Row = {
 
 export default function ChecksPage({ params }: { params: Params }) {
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-10 text-white">
+    <main className="min-h-screen px-6 py-10 text-white">
       <Suspense fallback={<p className="text-slate-400">Зареждане…</p>}>
         <ChecksList params={params} />
       </Suspense>
@@ -72,7 +72,7 @@ async function ChecksList({ params }: { params: Params }) {
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Проверки</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Проверки</h1>
           <p className="mt-1 text-sm text-slate-400">{org.name}</p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -84,7 +84,7 @@ async function ChecksList({ params }: { params: Params }) {
           </Link>
           <Link
             href={`/dashboard/${orgSlug}/checks/new`}
-            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium hover:bg-emerald-500"
+            className="rounded-lg btn-grad px-4 py-2 text-sm font-medium"
           >
             + Нова проверка
           </Link>
