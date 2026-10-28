@@ -1,9 +1,10 @@
 // Сваля регистъра на ESMA по MiCA и го записва в Supabase.
 //
-// Пускане от папката на проекта (Node 22.6+):
-//   node --env-file=.env.local scripts/esma-sync.mts
+// Пускане от папката на проекта:
+//   npm run esma-sync              (същото като: node --env-file=.env.local scripts/esma-sync.mts)
+//   npm run esma-sync -- --mirror  (ако сайтът на ESMA е недостъпен: копие на същите файлове в GitHub)
 //
-// Ако сайтът на ESMA е недостъпен, добави --mirror (копие на същите файлове в GitHub).
+// Онлайн същото се изпълнява всеки ден от /api/cron/esma-sync (vercel.json).
 //
 // Нужни са NEXT_PUBLIC_SUPABASE_URL и SUPABASE_SECRET_KEY от .env.local.
 // Secret ключът остава на твоя компютър — скриптът не го показва и не го записва.

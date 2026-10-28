@@ -26,6 +26,13 @@ const ROLE_LABELS: Record<Membership["role"], string> = {
   viewer: "Наблюдател",
 };
 
+const PLAN_LABELS: Record<string, string> = {
+  free: "Безплатен",
+  starter: "Starter",
+  pro: "Professional",
+  enterprise: "Enterprise",
+};
+
 const ENTITY_LABELS: Record<string, string> = {
   casp: "CASP",
   issuer: "Емитент",
@@ -107,7 +114,7 @@ async function DashboardContent() {
                   <p className="text-lg font-medium">{org.name}</p>
                   <p className="mt-1 text-sm text-slate-400">
                     {ENTITY_LABELS[org.entity_type] ?? org.entity_type}
-                    {org.country_code ? ` · ${org.country_code}` : ""} · план {org.plan}
+                    {org.country_code ? ` · ${org.country_code}` : ""} · план {PLAN_LABELS[org.plan] ?? org.plan}
                   </p>
                 </div>
                 <span className="rounded-full bg-emerald-950 px-3 py-1 text-xs text-emerald-300">

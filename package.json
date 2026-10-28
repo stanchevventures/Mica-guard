@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/mica-engine.test.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/esma-register.test.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/auth-redirect.test.mts",
+    "esma-sync": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --env-file=.env.local scripts/esma-sync.mts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

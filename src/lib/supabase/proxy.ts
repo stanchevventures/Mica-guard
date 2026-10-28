@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 // Страници, до които има достъп само влязъл потребител
-const PROTECTED_PATHS = ["/dashboard", "/onboarding"];
+const PROTECTED_PATHS = ["/dashboard", "/onboarding", "/reset-password"];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -16,13 +16,9 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          );
+          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
         },
       },
     }
@@ -33,12 +29,13 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
-  const isProtected = PROTECTED_PATHS.some((p) => path.startsWith(p));
+  const isProtected = PROTECTED_PATHS.some((p) => path === p || path.startsWith(`${p}/`));
 
   // Невлязъл потребител опитва защитена страница -> към /login
   if (!user && isProtected) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
+    url.search = path === "/reset-password" ? "?error=link" : "";
     return NextResponse.redirect(url);
   }
 
@@ -46,6 +43,7 @@ export async function updateSession(request: NextRequest) {
   if (user && path === "/login") {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
+    url.search = "";
     return NextResponse.redirect(url);
   }
 

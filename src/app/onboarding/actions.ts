@@ -53,7 +53,7 @@ function slugify(name: string): string {
 }
 
 function randomSuffix(): string {
-  return Math.random().toString(36).slice(2, 6);
+  return crypto.randomUUID().slice(0, 4);
 }
 
 export async function createOrganization(
@@ -88,6 +88,11 @@ export async function createOrganization(
     });
 
     if (!error) redirect("/dashboard");
+
+    // MG001 = лимитът от 3 организации на потребител (миграция 0006)
+    if (error.code === "MG001") {
+      return { error: "Можеш да създадеш до 3 организации. За повече пиши на team@micaguard.eu." };
+    }
 
     // 23505 = уникалността е нарушена (адресът вече съществува) -> пробваме пак
     if (error.code !== "23505") {
