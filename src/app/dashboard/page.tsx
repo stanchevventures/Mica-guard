@@ -30,8 +30,11 @@ const ENTITY_LABELS: Record<string, string> = {
   casp: "CASP",
   issuer: "Емитент",
   credit_institution: "Кредитна институция",
-  emi: "Институция за е-пари",
+  csd: "Централен депозитар",
   investment_firm: "Инвестиционен посредник",
+  emi: "Институция за е-пари",
+  fund_manager: "Управляващо дружество / ЛУАИФ",
+  market_operator: "Пазарен оператор",
   other: "Друго",
 };
 
@@ -126,6 +129,12 @@ async function DashboardContent() {
                     + Нова проверка
                   </Link>
                 )}
+                <Link
+                  href={`/dashboard/${org.slug}/settings`}
+                  className="ml-auto rounded-lg px-3 py-1.5 text-sm text-slate-400 hover:bg-slate-800 hover:text-white"
+                >
+                  Настройки
+                </Link>
               </div>
             </li>
           ))}

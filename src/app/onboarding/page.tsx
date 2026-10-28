@@ -4,11 +4,14 @@ import { useActionState } from "react";
 import { createOrganization, type OrgState } from "./actions";
 
 const ENTITY_TYPES = [
-  { value: "casp", label: "CASP — доставчик на крипто услуги" },
+  { value: "casp", label: "Доставчик на услуги за криптоактиви (CASP, чл. 63)" },
   { value: "issuer", label: "Емитент / оферент на криптоактиви" },
-  { value: "credit_institution", label: "Кредитна институция" },
-  { value: "emi", label: "Институция за електронни пари" },
-  { value: "investment_firm", label: "Инвестиционен посредник" },
+  { value: "credit_institution", label: "Кредитна институция (чл. 60(1))" },
+  { value: "csd", label: "Централен депозитар на ценни книжа (чл. 60(2))" },
+  { value: "investment_firm", label: "Инвестиционен посредник (чл. 60(3))" },
+  { value: "emi", label: "Институция за електронни пари (чл. 60(4))" },
+  { value: "fund_manager", label: "Управляващо дружество / ЛУАИФ (чл. 60(5))" },
+  { value: "market_operator", label: "Пазарен оператор (чл. 60(6))" },
   { value: "other", label: "Друго" },
 ];
 

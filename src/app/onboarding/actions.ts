@@ -10,8 +10,11 @@ const ENTITY_TYPES = [
   "casp",
   "issuer",
   "credit_institution",
-  "emi",
+  "csd",
   "investment_firm",
+  "emi",
+  "fund_manager",
+  "market_operator",
   "other",
 ] as const;
 

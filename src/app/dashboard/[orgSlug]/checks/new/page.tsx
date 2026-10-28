@@ -3,9 +3,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { CLASSIFICATION_LABEL } from "@/lib/mica/labels";
+import { ACTIVITY_LABEL, CLASSIFICATION_LABEL } from "@/lib/mica/labels";
 import { createCheck } from "../actions";
-import { CheckForm } from "../check-form";
+import { CheckForm, type FormAsset } from "../check-form";
 
 type Params = Promise<{ orgSlug: string }>;
 
@@ -31,12 +31,15 @@ async function NewCheck({ params }: { params: Params }) {
 
   const { data: org } = await supabase
     .from("organizations")
-    .select("id, name")
+    .select("id, name, casp_license_number, monthly_check_quota")
     .eq("slug", orgSlug)
     .maybeSingle();
   if (!org) notFound();
 
-  const [{ data: membership }, { data: assets }] = await Promise.all([
+  const now = new Date();
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+
+  const [{ data: membership }, { data: assets }, { count: used }] = await Promise.all([
     supabase
       .from("organization_members")
       .select("role")
@@ -45,36 +48,65 @@ async function NewCheck({ params }: { params: Params }) {
       .maybeSingle(),
     supabase
       .from("crypto_assets")
-      .select("id, symbol, name, blockchain, mica_classification")
+      .select(
+        "id, symbol, name, blockchain, mica_classification, identifiable_issuer, issuer_name, issuer_authorisation, anonymisation_function, whitepaper_url, whitepaper_notified_at"
+      )
       .order("symbol"),
+    supabase
+      .from("compliance_checks")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", org.id)
+      .gte("created_at", monthStart),
   ]);
 
   const canRun = membership && membership.role !== "viewer";
+  const quota = org.monthly_check_quota as number;
+  const remaining = Math.max(0, quota - (used ?? 0));
 
   return (
-    <div className="mx-auto max-w-lg">
+    <div className="mx-auto max-w-2xl">
       <Link href={`/dashboard/${orgSlug}/checks`} className="text-sm text-slate-400 hover:text-white">
         ← Към историята
       </Link>
-      <h1 className="mt-3 text-2xl font-semibold">Нова проверка</h1>
-      <p className="mt-1 text-sm text-slate-400">{org.name}</p>
+      <div className="mt-3 flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h1 className="text-2xl font-semibold">Нова проверка</h1>
+          <p className="mt-1 text-sm text-slate-400">{org.name}</p>
+        </div>
+        <p className="text-xs text-slate-400">
+          Проверки този месец: {used ?? 0} от {quota}
+        </p>
+      </div>
+
+      {!org.casp_license_number && (
+        <div className="mt-4 rounded-lg border border-amber-900 bg-amber-950/40 p-3 text-sm text-amber-200">
+          Няма въведен лиценз или нотификация. При услуги за криптоактиви проверката ще го отчете като критичен
+          пропуск.{" "}
+          <Link href={`/dashboard/${orgSlug}/settings`} className="underline">
+            Въведи в Настройки
+          </Link>
+        </div>
+      )}
 
       <div className="mt-6 rounded-xl border border-slate-800 bg-slate-900 p-6">
         {!canRun ? (
           <p className="text-slate-300">Ролята ти (Наблюдател) позволява само преглед на проверките.</p>
+        ) : remaining === 0 ? (
+          <p className="text-slate-300">Месечният лимит от проверки е изчерпан.</p>
         ) : !assets || assets.length === 0 ? (
-          <p className="text-slate-300">Каталогът с активи е празен. Пусни SQL файла с началните данни.</p>
+          <p className="text-slate-300">Каталогът с активи е празен.</p>
         ) : (
           <CheckForm
             action={createCheck.bind(null, orgSlug)}
-            assets={assets}
+            assets={assets as FormAsset[]}
             classificationLabels={CLASSIFICATION_LABEL}
+            activityLabels={ACTIVITY_LABEL}
           />
         )}
       </div>
 
       <p className="mt-4 text-xs text-slate-500">
-        Автоматичната оценка е предварителна и не представлява правно становище.
+        Автоматизирана предварителна оценка по Регламент (ЕС) 2023/1114 (MiCA). Не представлява правно становище.
       </p>
     </div>
   );
