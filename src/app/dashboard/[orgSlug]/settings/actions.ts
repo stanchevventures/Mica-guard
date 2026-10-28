@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { isValidLei } from "@/lib/esma/register";
 
 export type SettingsState = { error?: string; message?: string };
 
@@ -21,6 +22,7 @@ const schema = z.object({
     .trim()
     .toUpperCase()
     .refine((v) => v === "" || /^[A-Z0-9]{18}[0-9]{2}$/.test(v), "LEI трябва да е 20 символа (ISO 17442)")
+    .refine((v) => v === "" || isValidLei(v), "Невалиден LEI — контролните цифри не съвпадат. Провери за грешка при въвеждането.")
     .transform((v) => (v === "" ? null : v)),
 });
 

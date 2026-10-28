@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { buildRegisterEvidence } from "@/lib/esma/lookup";
 import {
   ACTIVITIES,
   ENGINE_VERSION,
@@ -87,7 +88,7 @@ export async function createCheck(
 
   const { data: org } = await supabase
     .from("organizations")
-    .select("id, entity_type, casp_license_number")
+    .select("id, entity_type, casp_license_number, lei")
     .eq("slug", orgSlug)
     .maybeSingle();
   if (!org) return { error: "Организацията не е намерена." };
@@ -96,7 +97,7 @@ export async function createCheck(
     supabase
       .from("crypto_assets")
       .select(
-        "symbol, name, blockchain, contract_address, mica_classification, identifiable_issuer, issuer_name, issuer_authorisation, anonymisation_function, whitepaper_url, whitepaper_notified_at, is_significant"
+        "symbol, name, blockchain, contract_address, mica_classification, identifiable_issuer, issuer_name, issuer_lei, issuer_authorisation, anonymisation_function, whitepaper_url, whitepaper_notified_at, is_significant"
       )
       .eq("id", d.asset_id)
       .maybeSingle(),
@@ -119,10 +120,12 @@ export async function createCheck(
     whitepaper_url: asset.whitepaper_url,
     whitepaper_notified_at: asset.whitepaper_notified_at,
     is_significant: asset.is_significant,
+    issuer_lei: asset.issuer_lei,
   };
   const orgFacts: OrgFacts = {
     entity_type: org.entity_type,
     casp_license_number: org.casp_license_number,
+    lei: org.lei,
   };
   const answers: Answers = {
     activities: d.services,
@@ -136,6 +139,14 @@ export async function createCheck(
     issuer_consent: d.issuer_consent,
   };
   const evaluatedAt = new Date();
+
+  // Регистър на ESMA: лиценз на организацията (по LEI) и на емитента на EMT/ART
+  const register = await buildRegisterEvidence(supabase, {
+    orgLei: org.lei,
+    issuerLei: asset.issuer_lei,
+    classification: asset.mica_classification,
+    symbol: asset.symbol,
+  });
 
   // 1) Проверката се създава като потребителя: RLS проверява ролята, тригерът — квотата
   const { data: check, error: insertError } = await supabase
@@ -152,6 +163,7 @@ export async function createCheck(
         asset: { ...assetFacts, blockchain: asset.blockchain, contract_address: asset.contract_address },
         org: orgFacts,
         answers,
+        register,
       },
     })
     .select("id")
@@ -178,7 +190,7 @@ export async function createCheck(
   // 2) Правилата
   let out: EngineOutput;
   try {
-    out = runMicaRules(assetFacts, orgFacts, answers, evaluatedAt);
+    out = runMicaRules(assetFacts, orgFacts, answers, evaluatedAt, register);
   } catch (e) {
     return fail(`engine: ${(e as Error).message}`);
   }

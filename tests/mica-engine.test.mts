@@ -1,5 +1,5 @@
 // Тестове на MiCA двигателя v1.2. Пускане (Node 22.6+): node tests/mica-engine.test.mts
-import { runMicaRules, type AssetFacts, type OrgFacts, type Answers } from "../src/lib/mica/engine.ts";
+import { runMicaRules, type AssetFacts, type OrgFacts, type Answers, type RegisterEvidence } from "../src/lib/mica/engine.ts";
 
 const NOW = new Date("2026-10-27T12:00:00Z");
 
@@ -32,8 +32,8 @@ const fundManager: OrgFacts = { entity_type: "fund_manager", casp_license_number
 type Expect = { result: string; risk?: number; outcomes?: Record<string, string>; absent?: string[] };
 let passed = 0, failed = 0;
 
-function check(name: string, asset: AssetFacts, org: OrgFacts, ans: Answers, exp: Expect, now = NOW) {
-  const r = runMicaRules(asset, org, ans, now);
+function check(name: string, asset: AssetFacts, org: OrgFacts, ans: Answers, exp: Expect, now = NOW, reg: RegisterEvidence = {}) {
+  const r = runMicaRules(asset, org, ans, now, reg);
   const errors: string[] = [];
   if (r.result !== exp.result) errors.push(`result=${r.result}, очакван ${exp.result}`);
   if (exp.risk !== undefined && r.risk_score !== exp.risk) errors.push(`risk=${r.risk_score}, очакван ${exp.risk}`);
@@ -172,6 +172,65 @@ deadline("39 WP-143: 28.10.2026 → остават 429 дни до 31.12.2027", 
 deadline("40 AUTH-001: 01.07.2026, 23:00 българско време → преходният режим още тече", BTC, unlicensed, custody, new Date("2026-07-01T20:00:00Z"), "AUTH-001", "evidence_required", "(срокът изтича днес)");
 check("41 AUTH-001: 02.07.2026, 00:30 българско време → преходният режим е изтекъл", BTC, unlicensed, custody,
   { result: "inconclusive", outcomes: { "AUTH-001": "evidence_required/critical" } }, new Date("2026-07-01T21:30:00Z"));
+
+// ---- Регистър на ESMA ----
+const AS_OF = "2026-10-22T10:00:00Z";
+const LEI_ORG = "64882N0ABXS71817AI18";
+const caspEntry = (over: Partial<NonNullable<NonNullable<RegisterEvidence["casp"]>["entry"]>> = {}) => ({
+  lei: LEI_ORG, name: "Belayer OOD", commercial_name: "Belayer", authority: "Комисия за финансов надзор", home_member_state: "BG",
+  legal_basis: "art63" as const, services: ["custody", "execution", "portfolio"] as any, authorised_on: "2026-04-28", ended_on: null, ...over,
+});
+const regCasp = (entry: any): RegisterEvidence => ({ casp: { as_of: AS_OF, lei: LEI_ORG, entry } });
+const withLei: OrgFacts = { ...casp, lei: LEI_ORG };
+const noLicenceLei: OrgFacts = { ...unlicensed, lei: LEI_ORG };
+
+check("42 Регистър: лицензът и услугата са вписани", BTC, withLei, { activities: ["custody"] },
+  { result: "compliant", risk: 0, outcomes: { "AUTH-001": "pass", "AUTH-003": "pass" } }, NOW, regCasp(caspEntry()));
+check("43 Регистър: услугата не е вписана (платформа)", BTC, withLei, { activities: ["custody", "trading_platform"], suitability_documented: "yes" },
+  { result: "non_compliant", outcomes: { "AUTH-001": "pass", "AUTH-003": "fail/high" } }, NOW, regCasp(caspEntry()));
+check("44 Регистър: лицензът е прекратен", BTC, withLei, { activities: ["custody"] },
+  { result: "non_compliant", outcomes: { "AUTH-001": "fail/critical" }, absent: ["AUTH-003"] }, NOW, regCasp(caspEntry({ ended_on: "2026-09-30" })));
+check("45 Регистър: прекратяване в бъдеще — още действа", BTC, withLei, { activities: ["custody"] },
+  { result: "compliant", outcomes: { "AUTH-001": "pass", "AUTH-003": "pass" } }, NOW, regCasp(caspEntry({ ended_on: "2026-12-31" })));
+check("46 Регистър: не е открит, деклариран номер", BTC, withLei, { activities: ["custody"] },
+  { result: "inconclusive", outcomes: { "AUTH-001": "evidence_required/high" }, absent: ["AUTH-003"] }, NOW, regCasp(null));
+check("47 Регистър: не е открит, без номер, след 01.07.2026", BTC, noLicenceLei, { activities: ["custody"] },
+  { result: "inconclusive", outcomes: { "AUTH-001": "evidence_required/critical" } }, NOW, regCasp(null));
+check("48 Регистър: няма данни за услугите", BTC, withLei, { activities: ["custody"] },
+  { result: "partially_compliant", outcomes: { "AUTH-001": "pass", "AUTH-003": "evidence_required/medium" } }, NOW, regCasp(caspEntry({ services: [] })));
+check("49 Регистър: вписан, без деклариран номер — регистърът стига", BTC, noLicenceLei, { activities: ["custody"] },
+  { result: "compliant", outcomes: { "AUTH-001": "pass" } }, NOW, regCasp(caspEntry()));
+
+const CIRCLE_LEI = "969500OYUDADGZKCR583";
+const circleEntry = (over: any = {}) => ({
+  lei: CIRCLE_LEI, name: "Circle Internet Financial Europe SAS", authority: "ACPR", home_member_state: "FR", authorisation: "emi" as const,
+  authorised_on: "2024-07-01", ended_on: null,
+  whitepapers: [{ url: "https://www.circle.com/fr/legal/mica-usdc-whitepaper", notified_on: "2024-07-01", last_update: "2026-09-15" }], ...over,
+});
+const regIssuer = (entry: any, register: "emt" | "art" = "emt"): RegisterEvidence => ({
+  issuer: { as_of: AS_OF, lei: CIRCLE_LEI, register, entry, whitepaper: entry?.whitepapers?.[0] ?? null },
+});
+const USDC_LEI: AssetFacts = { ...USDC, issuer_lei: CIRCLE_LEI };
+
+{
+  const r = runMicaRules(USDC_LEI, casp, { activities: ["custody", "exchange_funds"] }, NOW, regIssuer(circleEntry()));
+  const e1 = r.findings.find((f) => f.rule_code === "EMT-001")!;
+  const e2 = r.findings.find((f) => f.rule_code === "EMT-002")!;
+  const ok = e1.outcome === "pass" && e1.evidence.source === "esma_register" && e2.outcome === "pass" && e2.evidence.source === "esma_register"
+    && e2.details.includes("mica-usdc-whitepaper") && e2.details.includes("01.07.2024") && e2.details.includes("регистър на ESMA към 22.10.2026");
+  if (ok) { passed++; console.log("✓ 50 USDC: емитентът и бялата книга — от регистъра на ESMA"); }
+  else { failed++; console.log("✗ 50 USDC от регистъра\n    " + e1.outcome + " " + e1.evidence.source + " | " + e2.details); }
+}
+check("51 EMT: каталогът казва ИЕП, регистърът не го потвърждава", USDC_LEI, casp, { activities: ["custody"] },
+  { result: "inconclusive", outcomes: { "EMT-001": "evidence_required/high" } }, NOW, regIssuer(null));
+check("52 EMT: записът на емитента е прекратен", USDC_LEI, casp, { activities: ["custody"] },
+  { result: "non_compliant", outcomes: { "EMT-001": "fail/critical", "STB-001": "fail/critical" } }, NOW, regIssuer(circleEntry({ ended_on: "2026-08-01" })));
+check("53 EMT: регистърът има предимство пред остарял каталог", { ...USDT, issuer_lei: CIRCLE_LEI }, casp, { activities: ["custody"] },
+  { result: "compliant", outcomes: { "EMT-001": "pass" }, absent: ["STB-001"] }, NOW, regIssuer(circleEntry()));
+check("54 EMT: USDT — каталог „без лиценз“, не е в регистъра", { ...USDT, issuer_lei: CIRCLE_LEI }, casp, { activities: ["custody"] },
+  { result: "non_compliant", outcomes: { "EMT-001": "fail/critical", "STB-001": "fail/critical" } }, NOW, regIssuer(null));
+check("55 EMT: регистър на ART не се ползва за EMT", USDC_LEI, casp, { activities: ["custody"] },
+  { result: "compliant", outcomes: { "EMT-001": "pass" } }, NOW, regIssuer(null, "art"));
 
 console.log(`\n${passed} успешни, ${failed} неуспешни`);
 if (failed > 0) process.exit(1);

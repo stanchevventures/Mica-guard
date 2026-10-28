@@ -45,7 +45,7 @@ export function SettingsForm({
 
       <div>
         <label className="mb-1 block text-sm text-slate-300">
-          LEI <span className="text-slate-500">(по избор)</span>
+          LEI <span className="text-slate-500">(препоръчително — за автоматична проверка в регистъра на ESMA)</span>
         </label>
         <input
           name="lei"

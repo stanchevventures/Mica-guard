@@ -1,5 +1,5 @@
 // =====================================================================
-// MiCA-Guard — двигател за оценка на съответствието, v1.1
+// MiCA-Guard — двигател за оценка на съответствието, v1.2
 //
 // Оценката е от гледна точка на организацията-клиент: какво трябва да е
 // изпълнено, за да предоставя конкретни услуги за конкретен криптоактив.
@@ -13,12 +13,16 @@
 //
 // Правна основа: Регламент (ЕС) 2023/1114 (MiCA); ESMA Q&A 2404, 2552,
 // 2654; Становище на ESMA ESMA75-113276571-1742 от 08.10.2026.
+// Източници на данни (по приоритет): регистър на ESMA по MiCA -> каталог ->
+// декларация на потребителя.
 // Описание на правилата: docs/RULES.md
 //
 // ВАЖНО: автоматизирана предварителна оценка — не е правно становище.
 // =====================================================================
 
-export const ENGINE_VERSION = "mica-2026.10-v1.1";
+import type { RegisterCaspEntry, RegisterIssuerEntry } from "../esma/register";
+
+export const ENGINE_VERSION = "mica-2026.10-v1.2";
 
 export type Classification = "art" | "emt" | "other_crypto_asset" | "excluded" | "unclassified";
 export type Severity = "info" | "low" | "medium" | "high" | "critical";
@@ -74,12 +78,26 @@ export type AssetFacts = {
   whitepaper_url: string | null;
   whitepaper_notified_at: string | null;
   is_significant: boolean;
+  /** LEI на емитента (от каталога) — за проверка в регистъра на ESMA */
+  issuer_lei?: string | null;
 };
 
 /** Факти за организацията (от Настройки) */
 export type OrgFacts = {
   entity_type: string;
   casp_license_number: string | null;
+  /** LEI на организацията — за проверка в регистъра на ESMA */
+  lei?: string | null;
+};
+
+/**
+ * Резултат от търсенето в регистъра на ESMA. `null`/липса = не е търсено
+ * (няма LEI или регистърът още не е зареден); `entry: null` = търсено, но не е открито.
+ */
+export type RegisterEvidence = {
+  /** `registered_lei` — LEI, както е вписано в регистъра, ако там има грешка при въвеждане */
+  casp?: { as_of: string; lei: string; entry: RegisterCaspEntry | null; registered_lei?: string } | null;
+  issuer?: { as_of: string; lei: string; register: "emt" | "art"; entry: RegisterIssuerEntry | null; whitepaper?: RegisterIssuerEntry["whitepapers"][number] | null } | null;
 };
 
 /** Отговори на потребителя във формата (декларации) */
@@ -95,7 +113,7 @@ export type Answers = {
   issuer_consent?: Tri;
 };
 
-export type EvidenceSource = "catalog" | "user" | "org_settings" | "regulation";
+export type EvidenceSource = "esma_register" | "catalog" | "user" | "org_settings" | "regulation";
 
 export type Finding = {
   rule_code: string;
@@ -176,6 +194,18 @@ function remainingText(days: number): string {
   return days === 1 ? "остава 1 ден" : `остават ${days} дни`;
 }
 
+/** Днешната дата по българско време, ISO (yyyy-mm-dd) */
+function sofiaToday(now: Date): string {
+  const d = new Date(sofiaDayIndex(now) * 86_400_000);
+  return d.toISOString().slice(0, 10);
+}
+
+/** "2024-07-01" или ISO време -> "01.07.2024" */
+function fmtDay(iso: string | null | undefined): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso ?? "");
+  return m ? `${m[3]}.${m[2]}.${m[1]}` : (iso ?? "—");
+}
+
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
@@ -207,8 +237,12 @@ type WhitepaperEvidence = {
   source: EvidenceSource;
 };
 
-/** Данните от каталога имат предимство; иначе се ползва декларацията на потребителя */
-function resolveWhitepaper(asset: AssetFacts, a: Answers): WhitepaperEvidence {
+/** Приоритет: регистър на ESMA -> каталог -> декларация на потребителя */
+function resolveWhitepaper(asset: AssetFacts, a: Answers, register?: RegisterEvidence["issuer"]): WhitepaperEvidence {
+  const reg = register?.entry ? register.whitepaper : null;
+  if (reg) {
+    return { status: "yes", url: reg.url, notified_at: reg.notified_on, source: "esma_register" };
+  }
   if (has(asset.whitepaper_url)) {
     return {
       status: "yes",
@@ -233,7 +267,8 @@ export function runMicaRules(
   asset: AssetFacts,
   org: OrgFacts,
   answers: Answers,
-  now: Date
+  now: Date,
+  register: RegisterEvidence = {}
 ): EngineOutput {
   const out: Finding[] = [];
   const acts = new Set<Activity>(answers.activities);
@@ -294,13 +329,14 @@ export function runMicaRules(
   // ----------------------------------------------------------------
   // 2. Лиценз на доставчика (само ако предоставя крипто услуги)
   // ----------------------------------------------------------------
-  if (casp.length > 0) out.push(...authorisationRules(org, casp, asset, now));
+  if (casp.length > 0) out.push(...authorisationRules(org, casp, asset, now, register.casp ?? null));
 
   // ----------------------------------------------------------------
   // 3. Правила според вида на актива
   // ----------------------------------------------------------------
   if (asset.classification === "emt" || asset.classification === "art") {
-    out.push(...stablecoinRules(asset.classification, asset, answers, casp, offering, now));
+    const issuerReg = register.issuer?.register === asset.classification ? register.issuer : null;
+    out.push(...stablecoinRules(asset.classification, asset, answers, casp, offering, now, issuerReg));
   } else {
     out.push(...titleTwoRules(asset, answers, casp, offering, now));
   }
@@ -356,7 +392,8 @@ function authorisationRules(
   org: OrgFacts,
   services: CaspService[],
   asset: AssetFacts,
-  now: Date
+  now: Date,
+  reg: RegisterEvidence["casp"]
 ): Finding[] {
   const out: Finding[] = [];
   const art60 = ART60[org.entity_type];
@@ -365,8 +402,101 @@ function authorisationRules(
   const title = art60
     ? "Нотификация за предоставяне на услуги за криптоактиви"
     : "Лиценз на доставчик на услуги за криптоактиви (CASP)";
+  const declared = has(org.casp_license_number) ? org.casp_license_number : null;
+  const scopeText = art60 ? ` Обхват по ${art60.ref}: ${art60.scope}.` : "";
+  const transitionOver = isOverdue(now, KEY_DATES.caspTransitionEnd);
 
-  if (has(org.casp_license_number)) {
+  if (reg) {
+    // ---- Проверка в регистъра на ESMA по LEI ----------------------------
+    const e = reg.entry;
+    const asOf = fmtDay(reg.as_of);
+    const regEvidence = { source: "esma_register" as const, lei: reg.lei, register_as_of: reg.as_of, entry: e, casp_license_number: declared };
+
+    if (e && e.ended_on && e.ended_on <= sofiaToday(now)) {
+      out.push(
+        make({
+          rule_code: "AUTH-001",
+          mica_reference: ref,
+          title,
+          outcome: "fail",
+          severity: "critical",
+          details: `Според регистъра на ESMA (към ${asOf}) ${e.legal_basis === "art60" ? "нотификацията" : "лицензът"} на ${e.name} (LEI ${e.lei}) е прекратен${e.legal_basis === "art60" ? "а" : ""} на ${fmtDay(e.ended_on)}. Услуги за криптоактиви могат да се предоставят само от лицензиран доставчик или от субект с нотификация по чл. 60.`,
+          remediation: "Спри предоставянето на услугите и изясни статуса с компетентния орган.",
+          evidence: regEvidence,
+        })
+      );
+      return out;
+    }
+
+    if (e) {
+      const basis =
+        e.legal_basis === "art60"
+          ? "нотификация по чл. 60"
+          : e.legal_basis === "art63"
+            ? "лиценз по чл. 63"
+            : "вписан доставчик";
+      out.push(
+        make({
+          rule_code: "AUTH-001",
+          mica_reference: ref,
+          title,
+          outcome: "pass",
+          severity: "info",
+          details: `Регистър на ESMA (към ${asOf}): ${e.name} (LEI ${e.lei}) — ${basis}${e.authorised_on ? ` от ${fmtDay(e.authorised_on)}` : ""}; компетентен орган: ${e.authority ?? "—"}${e.home_member_state ? ` (${e.home_member_state})` : ""}.${
+            reg.registered_lei ? ` В регистъра LEI е вписано като ${reg.registered_lei} (невалидни контролни цифри — вероятна грешка при въвеждане; организацията е идентифицирана по LEI ${reg.lei}, което се различава с един знак).` : ""
+          }${declared ? ` Деклариран номер: ${declared}.` : ""}${scopeText}`,
+          remediation: reg.registered_lei ? "Уведоми компетентния орган за грешката в LEI в регистъра." : null,
+          evidence: regEvidence,
+        })
+      );
+
+      // Обхват: всяка услуга трябва да е вписана в регистъра
+      const missing = services.filter((s) => !e.services.includes(s));
+      const registered = e.services.map((s) => SERVICE_LABEL[s]).join(", ");
+      out.push(
+        make({
+          rule_code: "AUTH-003",
+          mica_reference: e.legal_basis === "art60" ? `чл. 59(1)(б), ${art60?.ref ?? "чл. 60"}` : "чл. 59(1)(а), чл. 63",
+          title: "Услугите са вписани в регистъра на ESMA",
+          outcome: e.services.length === 0 ? "evidence_required" : missing.length === 0 ? "pass" : "fail",
+          severity: e.services.length === 0 ? "medium" : missing.length === 0 ? "info" : "high",
+          details:
+            e.services.length === 0
+              ? `Регистърът на ESMA (към ${asOf}) не съдържа данни за услугите на ${e.name}.`
+              : missing.length === 0
+                ? `Всички оценявани услуги са вписани в регистъра (към ${asOf}): ${list}.`
+                : `В регистъра на ESMA (към ${asOf}) не са вписани услугите: ${missing.map((s) => SERVICE_LABEL[s]).join(", ")}. Вписани са: ${registered}. Доставчикът може да предоставя само услугите, за които има лиценз или нотификация.`,
+          remediation:
+            e.services.length === 0
+              ? "Провери обхвата в решението на компетентния орган."
+              : missing.length === 0
+                ? null
+                : "Не предоставяй тези услуги, докато обхватът не бъде разширен от компетентния орган. Ако разширението вече е одобрено, регистърът може още да не е обновен — пази решението в досието.",
+          evidence: { source: "esma_register", lei: e.lei, register_as_of: reg.as_of, registered: e.services, requested: services, missing },
+        })
+      );
+    } else {
+      const notFound = `LEI ${reg.lei} не е открито в регистъра на ESMA (към ${asOf}).`;
+      out.push(
+        make({
+          rule_code: "AUTH-001",
+          mica_reference: transitionOver ? ref : `${ref}, чл. 143(3)`,
+          title,
+          outcome: "evidence_required",
+          severity: !declared && transitionOver ? "critical" : "high",
+          details: declared
+            ? `${notFound} Деклариран номер: ${declared} (въведен в Настройки). ESMA обновява регистъра периодично — нов лиценз може да не е вписан веднага.`
+            : transitionOver
+              ? `${notFound} Не е въведен и номер на лиценз или нотификация. Преходният режим по чл. 143(3) изтече най-късно на 01.07.2026 — оттогава услуги за криптоактиви в ЕС могат да се предоставят само от лицензиран доставчик (чл. 63) или от субект с нотификация по чл. 60.`
+              : `${notFound} Не е въведен и номер на лиценз или нотификация. Преходният режим по чл. 143(3) се прилага само за доставчици, които са предоставяли услугите по националното право преди 30.12.2024 — до 01.07.2026 (${remainingText(daysLeft(now, KEY_DATES.caspTransitionEnd))}) или до решението по заявлението им за лиценз, ако е по-рано.`,
+          remediation: declared
+            ? "Провери дали LEI в Настройки е правилно и дали лицензът е вписан; пази решението на компетентния орган в досието."
+            : "Провери LEI в Настройки. Ако организацията няма лиценз или нотификация, предоставянето на услугите е забранено (чл. 59(1)).",
+          evidence: regEvidence,
+        })
+      );
+    }
+  } else if (declared) {
     out.push(
       make({
         rule_code: "AUTH-001",
@@ -374,18 +504,14 @@ function authorisationRules(
         title,
         outcome: "pass",
         severity: "info",
-        details: `Деклариран номер: ${org.casp_license_number} (въведен в Настройки).${
-          art60 ? ` Обхват по ${art60.ref}: ${art60.scope}.` : ""
-        }`,
-        remediation: `Провери в регистъра на ESMA, че ${
-          art60 ? "нотификацията" : "лицензът"
-        } обхваща: ${list}.${
+        details: `Деклариран номер: ${declared} (въведен в Настройки).${scopeText}`,
+        remediation: `Провери в регистъра на ESMA, че ${art60 ? "нотификацията" : "лицензът"} обхваща: ${list}.${
           art60 ? " Нотификацията се подава поне 40 работни дни преди първото предоставяне на услугите." : ""
-        }`,
-        evidence: { source: "org_settings", casp_license_number: org.casp_license_number, entity_type: org.entity_type },
+        }${has(org.lei) ? "" : " Въведи LEI в Настройки — тогава проверката в регистъра на ESMA става автоматична."}`,
+        evidence: { source: "org_settings", casp_license_number: declared, entity_type: org.entity_type },
       })
     );
-  } else if (isOverdue(now, KEY_DATES.caspTransitionEnd)) {
+  } else if (transitionOver) {
     out.push(
       make({
         rule_code: "AUTH-001",
@@ -396,7 +522,7 @@ function authorisationRules(
         details:
           "Не е въведен номер на лиценз или нотификация. Преходният режим по чл. 143(3) изтече най-късно на 01.07.2026 — оттогава услуги за криптоактиви в ЕС могат да се предоставят само от лицензиран доставчик (чл. 63) или от субект с нотификация по чл. 60.",
         remediation:
-          "Въведи номера в Настройки на организацията. Ако организацията няма лиценз или нотификация, предоставянето на услугите е забранено (чл. 59(1)).",
+          "Въведи LEI и номера на лиценза в Настройки на организацията. Ако организацията няма лиценз или нотификация, предоставянето на услугите е забранено (чл. 59(1)).",
         evidence: { source: "org_settings", casp_license_number: null, entity_type: org.entity_type },
       })
     );
@@ -462,23 +588,61 @@ function stablecoinRules(
   a: Answers,
   casp: CaspService[],
   offering: boolean,
-  now: Date
+  now: Date,
+  reg: RegisterEvidence["issuer"]
 ): Finding[] {
   const out: Finding[] = [];
   const isEmt = kind === "emt";
   const P = isEmt ? "EMT" : "ART";
-  const auth = asset.issuer_authorisation;
 
   // ---- 1. Лиценз на емитента ----------------------------------------
+  // Приоритет: регистър на ESMA (по LEI на емитента) -> каталог.
   const validAuth: IssuerAuthorisation[] = isEmt ? ["credit_institution", "emi"] : ["art_issuer", "credit_institution"];
-  const issuerOk = auth !== null && validAuth.includes(auth);
-  const issuerKnownBad = auth !== null && !validAuth.includes(auth);
   const authText: Record<IssuerAuthorisation, string> = {
     credit_institution: "кредитна институция",
     emi: "институция за електронни пари",
     art_issuer: "лицензиран емитент на ART (чл. 21)",
     none: "няма лиценз в ЕС",
   };
+  const catalogAuth = asset.issuer_authorisation;
+  const catalogOk = catalogAuth !== null && validAuth.includes(catalogAuth);
+  const catalogBad = catalogAuth !== null && !validAuth.includes(catalogAuth);
+  const e = reg?.entry ?? null;
+  const asOf = reg ? fmtDay(reg.as_of) : "";
+  const regEnded = !!e?.ended_on && e.ended_on <= sofiaToday(now);
+
+  let issuerStatus: "ok" | "bad" | "unknown";
+  let issuerSeverity: Severity = "critical";
+  let issuerSource: EvidenceSource = "catalog";
+  let issuerDetails: string;
+  let auth: IssuerAuthorisation | null = catalogAuth;
+
+  if (e && !regEnded) {
+    issuerStatus = "ok";
+    issuerSource = "esma_register";
+    auth = e.authorisation ?? (catalogOk ? catalogAuth : null);
+    issuerDetails = `Регистър на ESMA (към ${asOf}): ${e.name} (LEI ${e.lei})${auth ? ` — ${authText[auth]}` : ""}; компетентен орган: ${e.authority ?? "—"}${e.home_member_state ? ` (${e.home_member_state})` : ""}.`;
+  } else if (e && regEnded) {
+    issuerStatus = "bad";
+    issuerSource = "esma_register";
+    issuerDetails = `Според регистъра на ESMA (към ${asOf}) записът на емитента ${e.name} (LEI ${e.lei}) е прекратен на ${fmtDay(e.ended_on)}. Токенът не отговаря на MiCA и не може да се предлага публично или да се допуска до търговия в ЕС.`;
+  } else if (catalogBad) {
+    issuerStatus = "bad";
+    issuerDetails = `Емитент: ${asset.issuer_name ?? "—"} — ${authText[catalogAuth!]}.${reg ? ` LEI ${reg.lei} не е открито в регистъра на ESMA (към ${asOf}).` : ""} Токенът не отговаря на MiCA и не може да се предлага публично или да се допуска до търговия в ЕС.`;
+  } else if (catalogOk && reg) {
+    // Каталогът казва „лицензиран“, но регистърът не го потвърждава — не приемаме нито едното
+    issuerStatus = "unknown";
+    issuerSeverity = "high";
+    issuerSource = "esma_register";
+    issuerDetails = `Каталогът посочва ${asset.issuer_name ?? "емитента"} като ${authText[catalogAuth!]}, но LEI ${reg.lei} не е открито в регистъра на ${P} на ESMA (към ${asOf}).`;
+  } else if (catalogOk) {
+    issuerStatus = "ok";
+    issuerDetails = `Емитент: ${asset.issuer_name ?? "—"} (${authText[catalogAuth!]}).`;
+  } else {
+    issuerStatus = "unknown";
+    issuerDetails = `Няма данни за лиценза на емитента.${reg ? ` LEI ${reg.lei} не е открито в регистъра на ${P} на ESMA (към ${asOf}).` : ""}`;
+  }
+  const issuerKnownBad = issuerStatus === "bad";
 
   out.push(
     make({
@@ -487,19 +651,24 @@ function stablecoinRules(
       title: isEmt
         ? "Емитентът е кредитна институция или институция за електронни пари"
         : "Емитентът е лицензиран за ART или е кредитна институция",
-      outcome: issuerOk ? "pass" : issuerKnownBad ? "fail" : "evidence_required",
-      severity: "critical",
-      details: issuerOk
-        ? `Емитент: ${asset.issuer_name ?? "—"} (${authText[auth!]}).`
-        : issuerKnownBad
-          ? `Емитент: ${asset.issuer_name ?? "—"} — ${authText[auth!]}. Токенът не отговаря на MiCA и не може да се предлага публично или да се допуска до търговия в ЕС.`
-          : "Няма данни за лиценза на емитента.",
-      remediation: issuerOk
-        ? "Периодично проверявай лиценза в регистъра на ESMA."
-        : issuerKnownBad
-          ? "Не предлагай публично токена и не го допускай до търговия; за другите услуги виж STB-001."
-          : `Провери в регистъра на ESMA дали емитентът е ${isEmt ? "кредитна институция или институция за е-пари" : "лицензиран по чл. 21 или кредитна институция по чл. 17"}.`,
-      evidence: { source: "catalog", issuer_name: asset.issuer_name, issuer_authorisation: auth },
+      outcome: issuerStatus === "ok" ? "pass" : issuerStatus === "bad" ? "fail" : "evidence_required",
+      severity: issuerStatus === "ok" ? "info" : issuerSeverity,
+      details: issuerDetails,
+      remediation:
+        issuerStatus === "ok"
+          ? issuerSource === "esma_register"
+            ? null
+            : "Периодично проверявай лиценза в регистъра на ESMA."
+          : issuerKnownBad
+            ? "Не предлагай публично токена и не го допускай до търговия; за другите услуги виж STB-001."
+            : `Провери в регистъра на ESMA дали емитентът е ${isEmt ? "кредитна институция или институция за е-пари" : "лицензиран по чл. 21 или кредитна институция по чл. 17"}.`,
+      evidence: {
+        source: issuerSource,
+        issuer_name: e?.name ?? asset.issuer_name,
+        issuer_lei: reg?.lei ?? asset.issuer_lei ?? null,
+        issuer_authorisation: auth,
+        ...(reg ? { register_as_of: reg.as_of, found_in_register: !!e } : {}),
+      },
     })
   );
 
@@ -542,7 +711,7 @@ function stablecoinRules(
   }
 
   // ---- 3. Бяла книга ------------------------------------------------
-  const wp = resolveWhitepaper(asset, a);
+  const wp = resolveWhitepaper(asset, a, reg);
   const wpRef = isEmt ? "чл. 48(1)(б), чл. 51(11) и (13)" : "чл. 17(1)(а), чл. 21, чл. 28";
   const wpTitle = isEmt
     ? "Бялата книга на EMT е нотифицирана и публикувана"
@@ -558,7 +727,9 @@ function stablecoinRules(
         title: wpTitle,
         outcome: "pass",
         severity: "info",
-        details: `Публикувана: ${wp.url}; ${verb} на ${wp.notified_at}${wp.source === "catalog" ? " (данни от каталога)" : ""}.`,
+        details: `Публикувана: ${wp.url}; ${verb} на ${fmtDay(wp.notified_at)}${
+          wp.source === "esma_register" ? ` (регистър на ESMA към ${asOf})` : wp.source === "catalog" ? " (данни от каталога)" : ""
+        }.`,
         remediation: null,
         evidence: wpEvidence,
       })
@@ -851,7 +1022,7 @@ function titleTwoRules(
             outcome,
             severity,
             details: complete
-              ? `Бяла книга: ${wp.url}; нотифицирана на ${wp.notified_at}.`
+              ? `Бяла книга: ${wp.url}; нотифицирана на ${fmtDay(wp.notified_at)}.`
               : `${
                   wp.status === "yes"
                     ? `Бялата книга е налична (${wp.url}), но няма данни за нотифицирането ѝ.`
@@ -1040,7 +1211,7 @@ function notificationFinding(code: string, ref: string, wp: WhitepaperEvidence):
     outcome: ok ? "pass" : "evidence_required",
     severity: ok ? "info" : "medium",
     details: ok
-      ? `Нотифицирана на ${wp.notified_at}.`
+      ? `Нотифицирана на ${fmtDay(wp.notified_at)}.`
       : "Няма дата на нотифициране. Бялата книга се нотифицира поне 20 работни дни преди публикуването ѝ (чл. 8(5)); предварително одобрение не се изисква (чл. 8(3)).",
     remediation: ok ? null : "Провери в регистъра на ESMA и въведи датата.",
     evidence: { source: wp.source, notified_at: wp.notified_at },

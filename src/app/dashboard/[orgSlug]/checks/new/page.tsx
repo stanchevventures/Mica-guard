@@ -3,7 +3,8 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { ACTIVITY_LABEL, CLASSIFICATION_LABEL } from "@/lib/mica/labels";
+import { ACTIVITY_LABEL, CLASSIFICATION_LABEL, formatDate } from "@/lib/mica/labels";
+import { isMirror, isStale, loadRegisterStatus, REGISTER_STALE_DAYS } from "@/lib/esma/lookup";
 import { createCheck } from "../actions";
 import { CheckForm, type FormAsset } from "../check-form";
 
@@ -31,7 +32,7 @@ async function NewCheck({ params }: { params: Params }) {
 
   const { data: org } = await supabase
     .from("organizations")
-    .select("id, name, casp_license_number, monthly_check_quota")
+    .select("id, name, casp_license_number, lei, monthly_check_quota")
     .eq("slug", orgSlug)
     .maybeSingle();
   if (!org) notFound();
@@ -39,7 +40,7 @@ async function NewCheck({ params }: { params: Params }) {
   const now = new Date();
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
 
-  const [{ data: membership }, { data: assets }, { count: used }] = await Promise.all([
+  const [{ data: membership }, { data: assets }, { count: used }, registerStatus] = await Promise.all([
     supabase
       .from("organization_members")
       .select("role")
@@ -57,7 +58,9 @@ async function NewCheck({ params }: { params: Params }) {
       .select("id", { count: "exact", head: true })
       .eq("organization_id", org.id)
       .gte("created_at", monthStart),
+    loadRegisterStatus(supabase),
   ]);
+  const caspReg = registerStatus.casp;
 
   const canRun = membership && membership.role !== "viewer";
   const quota = org.monthly_check_quota as number;
@@ -73,15 +76,29 @@ async function NewCheck({ params }: { params: Params }) {
           <h1 className="text-2xl font-semibold">Нова проверка</h1>
           <p className="mt-1 text-sm text-slate-400">{org.name}</p>
         </div>
-        <p className="text-xs text-slate-400">
-          Проверки този месец: {used ?? 0} от {quota}
-        </p>
+        <div className="text-right text-xs text-slate-400">
+          <p>
+            Проверки този месец: {used ?? 0} от {quota}
+          </p>
+          <p className={isStale(caspReg) ? "text-amber-300" : undefined}>
+            {caspReg
+              ? `Регистър на ESMA: обновен ${formatDate(caspReg.last_success_at)}${isMirror(caspReg) ? " (резервно копие)" : ""}`
+              : "Регистърът на ESMA не е зареден"}
+          </p>
+        </div>
       </div>
 
-      {!org.casp_license_number && (
+      {isStale(caspReg) && (
         <div className="mt-4 rounded-lg border border-amber-900 bg-amber-950/40 p-3 text-sm text-amber-200">
-          Няма въведен лиценз или нотификация. При услуги за криптоактиви проверката ще го отчете като критичен
-          пропуск.{" "}
+          Копието на регистъра на ESMA е по-старо от {REGISTER_STALE_DAYS} дни. Обнови го преди проверки, на които
+          ще се разчита.
+        </div>
+      )}
+
+      {!org.casp_license_number && !org.lei && (
+        <div className="mt-4 rounded-lg border border-amber-900 bg-amber-950/40 p-3 text-sm text-amber-200">
+          Няма въведени LEI и лиценз или нотификация. При услуги за криптоактиви проверката ще го отчете като
+          критичен пропуск.{" "}
           <Link href={`/dashboard/${orgSlug}/settings`} className="underline">
             Въведи в Настройки
           </Link>

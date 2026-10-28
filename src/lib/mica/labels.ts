@@ -110,6 +110,7 @@ export const ENTITY_LABEL: Record<string, string> = {
 };
 
 export const SOURCE_LABEL: Record<string, string> = {
+  esma_register: "регистър на ESMA",
   catalog: "каталог",
   user: "декларация на потребителя",
   org_settings: "настройки на организацията",
@@ -127,6 +128,12 @@ export const ADMISSION_LABEL: Record<string, string> = {
   before_mica: "Допуснат преди 30.12.2024",
   elsewhere_consent: "Допуснат на друга платформа в ЕС, със съгласие за ползване на бялата книга",
 };
+
+/** "2026-04-28" -> "28.04.2026" (дата без час) */
+export function formatDay(iso: string | null | undefined): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso ?? "");
+  return m ? `${m[3]}.${m[2]}.${m[1]}` : "—";
+}
 
 export function formatDate(iso: string | null): string {
   if (!iso) return "—";
